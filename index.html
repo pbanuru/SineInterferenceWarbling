@@ -3,9 +3,10 @@
 <head>
   <title>Audio Frequency Demonstration</title>
 </head>
-<body>
+<body style="zoom: 110%">
   <h1>Audio Frequency Demonstration</h1>
   <p>This website demonstrates how audio waves of different frequencies blend together and cancel each other out, and how the closer two frequencies are, the slower the warbling will be.</p>
+  
   <p>Use the sliders below to adjust the frequency of the two audio waves:</p>
   <div id="controls">
     <label for="frequency1">Frequency 1:</label>
@@ -19,6 +20,17 @@
   
   <button id="mute-button">Mute</button>
   <canvas id="waveform" width="800" height="400"></canvas>
+  <h3>Try All Of These Combinations</h3>
+  <p>129 hz and 130 hz.</p>
+  <p>Now 129 hz and 131 hz.</p>
+  <p>Now 129 hz and 129.1 hz. (Wait it out, notice the changes)</p>
+  <p>Singers can use sine waves to train pitch accuracy, as they sing one note against a sine wave and aim to minimize the warbling.</p>
+
+  <h3>Additional</h3>
+  <p>This project was made in about 4.75 hours, completely carried by ChatGPT.</p>
+  <p>I did learn some things along the way as I tried to fix things, but ChatGPT did the heavy lifting as I told it what new features I want.</p> 
+  <p>It makes me curious what the future of programming holds.</p>
+  
   <script>
 
     // get references to the canvas, the sliders, and the mute button
@@ -40,14 +52,17 @@
     frequency2Slider.max = maxValue;
 
     // set the minimum and maximum values for the current frequencies.
-    var currentFrequency1 = 116;
-    var currentFrequency2 = 290;
+    var currentFrequency1 = 129;
+    var currentFrequency2 = 130;
 
     // set the minimum and maximum values for the frequency values
     frequency1Display.value = currentFrequency1;
     frequency2Display.value = currentFrequency2;
     frequency1Slider.value = currentFrequency1;
     frequency2Slider.value = currentFrequency2;
+
+    // Set canvas width 
+    canvas.width = window.innerWidth;
 
     // Make canvas have red background 1
     // var ctx = canvas.getContext('2d');
