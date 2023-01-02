@@ -22,3 +22,8 @@ This project was made in about 4.75 hours, an experiment completely carried by C
 I did learn some things along the way as I tried to fix things, but ChatGPT did the heavy lifting as I told it what new features I want.
 
 It makes me curious what the future of programming holds.
+
+## Example Dialogue with ChatGPT:
+<img width="741" alt="image" src="https://user-images.githubusercontent.com/55062649/210277011-7a623372-9e25-4d08-b384-3f7168338044.png">
+<img width="749" alt="image" src="https://user-images.githubusercontent.com/55062649/210277093-a6b9fcd2-f863-4178-bac5-c8951508a2c4.png">
+
