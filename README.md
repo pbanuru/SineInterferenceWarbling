@@ -5,7 +5,7 @@ Try it out!
 
 ## https://pbanuru.github.io/SineInterferenceWarbling/
 
-<img width="1470" alt="image" src="https://user-images.githubusercontent.com/55062649/210276499-3439d02e-2799-4be1-8773-184aa925ab1f.png">
+<img width="1470" alt="image" src="https://user-images.githubusercontent.com/55062649/210277649-4eb809da-0374-44ba-bc82-f267a5f3a8b6.png">
 
 ## Try All Of These Combinations
 129 hz and 130 hz.
