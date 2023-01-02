@@ -17,7 +17,7 @@ Now 129 hz and 129.1 hz. (Wait it out, notice the changes)
 Singers can use sine waves to train pitch accuracy, as they sing one note against a sine wave and aim to minimize the warbling.
 
 ## Additional
-This project was made in about 4.75 hours, completely carried by ChatGPT.
+This project was made in about 4.75 hours, an experiment completely carried by ChatGPT, with only experience in simple WebDev.
 
 I did learn some things along the way as I tried to fix things, but ChatGPT did the heavy lifting as I told it what new features I want.
 
