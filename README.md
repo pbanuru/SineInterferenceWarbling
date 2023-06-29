@@ -18,6 +18,7 @@ Singers can use sine waves to train pitch accuracy, as they sing one note agains
 
 ## Additional
 This project was made in about 4.75 hours, I had ChatGPT do most of the work. I was very curious what it was capable of (GPT3 I believe), and it impressed me!
+I did learn some things along the way as I tried to fix things.
 
 ## Example Dialogue with ChatGPT:
 <img width="741" alt="image" src="https://user-images.githubusercontent.com/55062649/210277011-7a623372-9e25-4d08-b384-3f7168338044.png">
