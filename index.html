@@ -3,6 +3,7 @@
 <head>
   <title>Sine Wave Interference Warbling Demonstration</title>
 </head>
+<link rel="stylesheet" href="styles.css">
 <body style="zoom: 110%">
   <h1>Sine Wave Interference Warbling Demonstration</h1>
   <p>This website demonstrates how audio waves of different frequencies blend together and cancel each other out, and how the closer two frequencies are, the slower the warbling will be.</p>
@@ -10,195 +11,174 @@
   <p>Use the sliders below to adjust the frequency of the two audio waves:</p>
   <div id="controls">
     <label for="frequency1">Frequency 1:</label>
-    <input type="range" id="frequency1" min="0" max="300" value="115" step="1" style="width: calc(100% - 50px)">
+    <input type="range" id="frequency1" min="0" max="20000" value="115" step="1" style="width: calc(100% - 50px)">
     <input type="text" id="frequency1-display" value="115"> Hz
     <br>
     <label for="frequency2">Frequency 2:</label>
-    <input type="range" id="frequency2" min="0" max="300" value="290" step="1" style="width: calc(100% - 50px)">
+    <input type="range" id="frequency2" min="0" max="20000" value="290" step="1" style="width: calc(100% - 50px)">
     <input type="text" id="frequency2-display" value="290"> Hz
   </div>
   
   <button id="mute-button">Mute</button>
+  <h3>Time Domain</h3>
   <canvas id="waveform" width="800" height="400"></canvas>
+  <h3>Frequency Domain</h3>
+  <canvas id="frequencyform" width="800" height="400"></canvas>
+
   <h3>Try All Of These Combinations</h3>
-  <p>129 hz and 130 hz.</p>
-  <p>Now 129 hz and 131 hz.</p>
-  <p>Now 129 hz and 129.1 hz. (Wait it out, notice the changes)</p>
+  <p>
+      <button class="set-frequency" data-freq1="129" data-freq2="130">Set to 129 Hz and 130 Hz</button>
+  </p>
+  <p>
+      <button class="set-frequency" data-freq1="129" data-freq2="131">Set to 129 Hz and 131 Hz</button>
+  </p>
+  <div class="centered-container">
+      <button class="set-frequency" data-freq1="129" data-freq2="129.1">Set to 129 Hz and 129.1 Hz</button>
+      <span class="message">(Wait it out, notice the changes)</span>
+  </div>
+
   <p>Singers can use sine waves to train pitch accuracy, as they sing one note against a sine wave and aim to minimize the warbling.</p>
 
   <h3>Additional</h3>
-  <p>This project was made in about 4.75 hours, I had ChatGPT do most of the work. I was very curious what it was capable of (GPT3 I believe), and it impressed me!</p>
+  <p>This project was made with the help of ChatGPT. It's impressive to see what it's capable of!</p>
   <p>I did learn some things along the way as I tried to fix things</p> 
   
   <script>
-
-    // get references to the canvas, the sliders, and the mute button
-    var canvas = document.getElementById('waveform');
+    var canvasTime = document.getElementById('waveform');
+    var canvasFreq = document.getElementById('frequencyform');
     var frequency1Slider = document.getElementById('frequency1');
     var frequency1Display = document.getElementById('frequency1-display');
     var frequency2Slider = document.getElementById('frequency2');
     var frequency2Display = document.getElementById('frequency2-display');
     var muteButton = document.getElementById('mute-button');
 
-    // define the minimum and maximum values for the range sliders
-    var minValue = 0;
-    var maxValue = 20000;
-    
-    // set the minimum and maximum values for the range sliders
-    frequency1Slider.min = minValue;
-    frequency1Slider.max = maxValue;
-    frequency2Slider.min = minValue;
-    frequency2Slider.max = maxValue;
-
-    // set the minimum and maximum values for the current frequencies.
-    var currentFrequency1 = 129;
-    var currentFrequency2 = 130;
-
-    // set the minimum and maximum values for the frequency values
-    frequency1Display.value = currentFrequency1;
-    frequency2Display.value = currentFrequency2;
-    frequency1Slider.value = currentFrequency1;
-    frequency2Slider.value = currentFrequency2;
-
-    // Set canvas width 
-    canvas.width = window.innerWidth;
-
-    // Make canvas have red background 1
-    // var ctx = canvas.getContext('2d');
-    // ctx.fillStyle = "red";
-    // ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-    // create an audio context
     var audioContext = new AudioContext();
 
-    // create two oscillators
     var oscillator1 = audioContext.createOscillator();
     var oscillator2 = audioContext.createOscillator();
 
-    // create a gain node
     var gainNode = audioContext.createGain();
 
-    // set the initial frequencies of the oscillators
     oscillator1.frequency.value = frequency1Slider.value;
     oscillator2.frequency.value = frequency2Slider.value;
 
-    // connect the oscillators to the gain node
     oscillator1.connect(gainNode);
     oscillator2.connect(gainNode);
 
-    // connect the gain node to the destination
     gainNode.connect(audioContext.destination);
 
-    // start the oscillators
     oscillator1.start();
     oscillator2.start();
 
-    // create an analyser
-// create an analyser node
-var analyser = audioContext.createAnalyser();
+    var analyser = audioContext.createAnalyser();
+    gainNode.connect(analyser);
 
-// connect the gain node to the analyser node
-gainNode.connect(analyser);
+    function drawTimeDomain() {
+      var data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteTimeDomainData(data);
 
-// create a draw function to draw the waveform on the canvas
-function draw() {
-  // get the audio data
-  var data = new Uint8Array(analyser.frequencyBinCount);
-  // console.log(data);
-  analyser.getByteTimeDomainData(data);
+      canvasTime.getContext('2d').clearRect(0, 0, canvasTime.width, canvasTime.height);
+      canvasTime.getContext('2d').beginPath();
+      
+      var width = canvasTime.width;
+      var height = canvasTime.height;
+      var sliceWidth = width * 1.0 / data.length;
+      var x = 0;
 
-  // clear the canvas
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      for (var i = 1; i < data.length; i++) {
+        var v = data[i] / 128.0;
+        var y = v * height/2; 
 
-  // Make canvas have red background 2
-  // ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if(i === 0) {
+          canvasTime.getContext('2d').moveTo(x, y);
+        } else {
+          canvasTime.getContext('2d').lineTo(x, y);
+        }
 
-  // draw the waveform
-  canvas.getContext('2d').beginPath();
-  
-  var width = canvas.width;
-  var height = canvas.height;
-  var sliceWidth = width * 1.0 / data.length;
-  var x = 0;
+        x += sliceWidth;
+      }
 
-  // var minData = Math.min(data);
-  // var maxData = Math.max(data);
-  // var minData = data[0];
-  // var maxData = data[0];
-
-  for (var i = 1; i < data.length; i++) {
-    // if (data[i] < minData) {
-    //   minData = data[i];
-    // }
-    // if (data[i] > maxData) {
-    //   maxData = data[i];
-    // }
-
-    var v = data[i] / 128.0;
-    var y = v * height/2; 
-
-    // var yPercent = (y - minData) / (maxData - minData);
-    // y = yPercent * height/2;
-
-    if(i === 0) {
-      canvas.getContext('2d').moveTo(x, y);
-    } else {
-      canvas.getContext('2d').lineTo(x, y);
+      canvasTime.getContext('2d').stroke();
+      requestAnimationFrame(drawTimeDomain);
     }
 
-    x += sliceWidth;
-  }
+    function drawFrequencyDomain() {
+      var data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
 
-  canvas.getContext('2d').stroke();  // <-- add this line
+      canvasFreq.getContext('2d').clearRect(0, 0, canvasFreq.width, canvasFreq.height);
+      var barWidth = (canvasFreq.width / data.length);
+      var barHeight;
+      var x = 0;
 
-  // schedule the next draw call
-  requestAnimationFrame(draw);
-}
+      for(var i = 0; i < data.length; i++) {
+        barHeight = data[i];
+        canvasFreq.getContext('2d').fillStyle = 'rgb(' + (barHeight+100) + ',50,50)';
+        canvasFreq.getContext('2d').fillRect(x,canvasFreq.height-barHeight/2,barWidth,barHeight/2);
+        x += barWidth + 1;
+      }
 
-// start drawing the waveform
-draw();
+      requestAnimationFrame(drawFrequencyDomain);
+    }
 
-// update the oscillator frequencies and frequency displays when the sliders are moved
-frequency1Slider.addEventListener('input', function() {
-  oscillator1.frequency.value = frequency1Slider.value;
-  frequency1Display.value = frequency1Slider.value;  
-});
+    drawTimeDomain();
+    drawFrequencyDomain();
 
-frequency2Slider.addEventListener('input', function() {
-  oscillator2.frequency.value = frequency2Slider.value;
-  frequency2Display.value = frequency2Slider.value;  
-});
+    frequency1Slider.addEventListener('input', function() {
+      oscillator1.frequency.value = frequency1Slider.value;
+      frequency1Display.value = frequency1Slider.value;  
+    });
 
-frequency1Display.addEventListener('input', function() {
-  frequency1Slider.value = frequency1Display.value;
-  oscillator1.frequency.value = frequency1Display.value;
-});
+    frequency2Slider.addEventListener('input', function() {
+      oscillator2.frequency.value = frequency2Slider.value;
+      frequency2Display.value = frequency2Slider.value;  
+    });
 
-frequency2Display.addEventListener('input', function() {
-  frequency2Slider.value = frequency2Display.value;
-  oscillator2.frequency.value = frequency2Display.value;
-});
+    frequency1Display.addEventListener('input', function() {
+      frequency1Slider.value = frequency1Display.value;
+      oscillator1.frequency.value = frequency1Display.value;
+    });
 
-// mute the audio when the mute button is clicked
-muteButton.addEventListener('click', function() {
-  if (muteButton.textContent === 'Mute') {
-    gainNode.gain.value = 0;
-    muteButton.textContent = 'Unmute';
-  } else {
-    gainNode.gain.value = 1;
-    muteButton.textContent = 'Mute';
-  }
-});
+    frequency2Display.addEventListener('input', function() {
+      frequency2Slider.value = frequency2Display.value;
+      oscillator2.frequency.value = frequency2Display.value;
+    });
 
-function startAudio() {
-  audioContext.resume().then(() => {
-    // start the oscillators and draw the waveform here
-  });
-}
+    muteButton.addEventListener('click', function() {
+      if (muteButton.textContent === 'Mute') {
+        gainNode.gain.value = 0;
+        muteButton.textContent = 'Unmute';
+      } else {
+        gainNode.gain.value = 1;
+        muteButton.textContent = 'Mute';
+      }
+    });
 
-document.addEventListener('click', startAudio);
+    function startAudio() {
+      audioContext.resume().then(() => {
+        // start the oscillators and draw the waveform here
+      });
+    }
 
+    document.addEventListener('click', startAudio);
 
-</script>
+    document.querySelectorAll('.set-frequency').forEach(button => {
+    button.addEventListener('click', function() {
+        // Get the frequencies from the data attributes
+        let freq1 = this.getAttribute('data-freq1');
+        let freq2 = this.getAttribute('data-freq2');
+
+        // Set the oscillator frequencies
+        oscillator1.frequency.value = freq1;
+        oscillator2.frequency.value = freq2;
+
+        // Update the slider and display values
+        frequency1Slider.value = freq1;
+        frequency2Slider.value = freq2;
+        frequency1Display.value = freq1;
+        frequency2Display.value = freq2;
+      });
+    });
+  </script>
 </body>
-</html> 
+</html>
