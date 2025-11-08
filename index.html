@@ -86,7 +86,6 @@
     oscillator2.start();
 
     var analyser = audioContext.createAnalyser();
-    analyser.fftSize = 8192; // Higher FFT size for better frequency resolution (4096 bins)
     gainNode.connect(analyser);
 
     function drawTimeDomain() {
@@ -151,6 +150,15 @@
       var padding = Math.max(freqRange * 0.5, 100); // At least 100 Hz padding
       var displayMinFreq = Math.max(0, minFreq - padding);
       var displayMaxFreq = maxFreq + padding;
+
+      // Prevent excessive zoom when frequencies are nearby
+      var minDisplayRange = 2000; // Minimum 2000 Hz display range
+      var currentRange = displayMaxFreq - displayMinFreq;
+      if (currentRange < minDisplayRange) {
+        var center = (displayMinFreq + displayMaxFreq) / 2;
+        displayMinFreq = Math.max(0, center - minDisplayRange / 2);
+        displayMaxFreq = displayMinFreq + minDisplayRange;
+      }
 
       // Calculate which FFT bins to display
       var nyquist = audioContext.sampleRate / 2;

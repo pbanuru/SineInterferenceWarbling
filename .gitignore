@@ -351,4 +351,6 @@ MigrationBackup/
 
 # Test files
 waveform-test*.png
+nearby-freq-test.png
 test-waveform.js
+test-nearby-freq.js
