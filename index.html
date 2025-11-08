@@ -1,47 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sine Wave Interference Warbling Demonstration</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<link rel="stylesheet" href="styles.css">
-<body style="zoom: 110%">
-  <h1>Sine Wave Interference Warbling Demonstration</h1>
-  <p>This website demonstrates how audio waves of different frequencies blend together and cancel each other out, and how the closer two frequencies are, the slower the warbling will be.</p>
-  
-  <p>Use the sliders below to adjust the frequency of the two audio waves:</p>
-  <div id="controls">
-    <label for="frequency1">Frequency 1:</label>
-    <input type="range" id="frequency1" min="0" max="20000" value="115" step="1" style="width: calc(100% - 50px)">
-    <input type="text" id="frequency1-display" value="115"> Hz
-    <br>
-    <label for="frequency2">Frequency 2:</label>
-    <input type="range" id="frequency2" min="0" max="20000" value="290" step="1" style="width: calc(100% - 50px)">
-    <input type="text" id="frequency2-display" value="290"> Hz
-  </div>
-  
-  <button id="mute-button">Mute</button>
-  <h3>Time Domain</h3>
-  <canvas id="waveform" width="800" height="400"></canvas>
-  <h3>Frequency Domain</h3>
-  <canvas id="frequencyform" width="800" height="400"></canvas>
+<body>
+  <div class="container">
+    <h1>Sine Wave Interference Warbling</h1>
+    <p>Audio waves of different frequencies blend together and cancel each other out. The closer two frequencies are, the slower the warbling.</p>
+    
+    <div id="controls">
+      <div class="control-group">
+        <label for="frequency1">Frequency 1:</label>
+        <input type="range" id="frequency1" min="0" max="20000" value="115" step="1">
+        <input type="text" id="frequency1-display" value="115">
+        <span>Hz</span>
+      </div>
+      <div class="control-group">
+        <label for="frequency2">Frequency 2:</label>
+        <input type="range" id="frequency2" min="0" max="20000" value="290" step="1">
+        <input type="text" id="frequency2-display" value="290">
+        <span>Hz</span>
+      </div>
+    </div>
+    
+    <button id="mute-button">Mute</button>
+    
+    <div class="canvas-container">
+      <h3>Time Domain</h3>
+      <canvas id="waveform" width="700" height="140"></canvas>
+    </div>
+    
+    <div class="canvas-container">
+      <h3>Frequency Domain</h3>
+      <canvas id="frequencyform" width="700" height="140"></canvas>
+    </div>
 
-  <h3>Try All Of These Combinations</h3>
-  <p>
-      <button class="set-frequency" data-freq1="129" data-freq2="130">Set to 129 Hz and 130 Hz</button>
-  </p>
-  <p>
-      <button class="set-frequency" data-freq1="129" data-freq2="131">Set to 129 Hz and 131 Hz</button>
-  </p>
-  <div class="centered-container">
-      <button class="set-frequency" data-freq1="129" data-freq2="129.1">Set to 129 Hz and 129.1 Hz</button>
-      <span class="message">(Wait it out, notice the changes)</span>
-  </div>
+    <h3>Try These Combinations</h3>
+    <div class="button-row">
+      <button class="set-frequency" data-freq1="129" data-freq2="130">129 & 130 Hz</button>
+      <button class="set-frequency" data-freq1="129" data-freq2="131">129 & 131 Hz</button>
+      <button class="set-frequency" data-freq1="129" data-freq2="129.1">129 & 129.1 Hz</button>
+    </div>
+    <p class="hint-text">(Wait it out for 129.1 Hz to notice changes)</p>
 
-  <p>Singers can use sine waves to train pitch accuracy, as they sing one note against a sine wave and aim to minimize the warbling.</p>
-
-  <h3>Additional</h3>
-  <p>This project was made with the help of ChatGPT. It's impressive to see what it's capable of!</p>
-  <p>I did learn some things along the way as I tried to fix things</p> 
+    <div class="info-section">
+      <p><strong>Singers use sine waves to train pitch accuracy</strong> by minimizing warbling. Made with ChatGPT.</p>
+    </div> 
   
   <script>
     var canvasTime = document.getElementById('waveform');
@@ -73,32 +80,119 @@
     var analyser = audioContext.createAnalyser();
     gainNode.connect(analyser);
 
+    // Track frequencies and cached min/max for stable scaling
+    var currentFreq1 = parseFloat(frequency1Slider.value);
+    var currentFreq2 = parseFloat(frequency2Slider.value);
+    var cachedMin = 0;
+    var cachedMax = 255;
+    var scaleUpdateFrames = 0;
+    var maxScaleUpdateFrames = 600; // Sample for 10 seconds at 60fps to capture slow beat frequencies
+
+    function updateWaveformScale(data) {
+      // Accumulate min/max over multiple frames
+      for (var i = 0; i < data.length; i++) {
+        if (data[i] < cachedMin) cachedMin = data[i];
+        if (data[i] > cachedMax) cachedMax = data[i];
+      }
+    }
+
     function drawTimeDomain() {
       var data = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteTimeDomainData(data);
 
-      canvasTime.getContext('2d').clearRect(0, 0, canvasTime.width, canvasTime.height);
-      canvasTime.getContext('2d').beginPath();
+      var ctx = canvasTime.getContext('2d');
+      ctx.clearRect(0, 0, canvasTime.width, canvasTime.height);
+      ctx.beginPath();
       
       var width = canvasTime.width;
       var height = canvasTime.height;
       var sliceWidth = width * 1.0 / data.length;
       var x = 0;
 
-      for (var i = 1; i < data.length; i++) {
-        var v = data[i] / 128.0;
-        var y = v * height/2; 
+      // Check if frequencies changed
+      var newFreq1 = parseFloat(frequency1Slider.value);
+      var newFreq2 = parseFloat(frequency2Slider.value);
+      
+      if (newFreq1 !== currentFreq1 || newFreq2 !== currentFreq2) {
+        currentFreq1 = newFreq1;
+        currentFreq2 = newFreq2;
+        scaleUpdateFrames = 0;
+        // Reset cached values to force recalculation
+        cachedMin = 255;
+        cachedMax = 0;
+      }
 
-        if(i === 0) {
-          canvasTime.getContext('2d').moveTo(x, y);
+      // Update scale only when frequencies change or during initial sampling period
+      if (scaleUpdateFrames < maxScaleUpdateFrames) {
+        updateWaveformScale(data);
+        scaleUpdateFrames++;
+      }
+      
+      // Use cached values if valid, otherwise use current frame's data
+      var useCached = cachedMax > cachedMin && scaleUpdateFrames >= maxScaleUpdateFrames;
+      var min = useCached ? cachedMin : 255;
+      var max = useCached ? cachedMax : 0;
+      
+      // If not using cached, get current frame's range
+      if (!useCached) {
+        for (var i = 0; i < data.length; i++) {
+          if (data[i] < min) min = data[i];
+          if (data[i] > max) max = data[i];
+        }
+      }
+      
+      // Check current frame for values outside cached range and expand if needed
+      if (useCached) {
+        var currentMin = 255;
+        var currentMax = 0;
+        for (var i = 0; i < data.length; i++) {
+          if (data[i] < currentMin) currentMin = data[i];
+          if (data[i] > currentMax) currentMax = data[i];
+        }
+        // Expand cached range if current frame exceeds it, and update cache
+        if (currentMin < cachedMin) {
+          cachedMin = currentMin;
+          min = currentMin;
+        }
+        if (currentMax > cachedMax) {
+          cachedMax = currentMax;
+          max = currentMax;
+        }
+      }
+      
+      // Add very generous padding to the range to prevent clipping (50% on each side)
+      // This ensures we have plenty of headroom for peaks that might exceed sampled values
+      var rangePadding = Math.max((max - min) * 0.5, 20); // At least 20 units of padding
+      var adjustedMin = Math.max(0, min - rangePadding);
+      var adjustedMax = Math.min(255, max + rangePadding);
+      var range = adjustedMax - adjustedMin;
+      
+      // Canvas padding (8% on top and bottom for extra headroom)
+      var padding = height * 0.08;
+      var availableHeight = height - (padding * 2);
+
+      ctx.strokeStyle = '#818cf8';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'rgba(129, 140, 248, 0.6)';
+
+      for (var i = 1; i < data.length; i++) {
+        // Normalize to 0-1 range based on adjusted min/max, then scale to fit canvas
+        var normalized = range > 0 ? (data[i] - adjustedMin) / range : 0.5;
+        var y = padding + (normalized * availableHeight);
+
+        if(i === 1) {
+          ctx.moveTo(x, y);
         } else {
-          canvasTime.getContext('2d').lineTo(x, y);
+          ctx.lineTo(x, y);
         }
 
         x += sliceWidth;
       }
 
-      canvasTime.getContext('2d').stroke();
+      ctx.stroke();
       requestAnimationFrame(drawTimeDomain);
     }
 
@@ -106,15 +200,24 @@
       var data = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(data);
 
-      canvasFreq.getContext('2d').clearRect(0, 0, canvasFreq.width, canvasFreq.height);
-      var barWidth = (canvasFreq.width / data.length);
+      var ctx = canvasFreq.getContext('2d');
+      ctx.clearRect(0, 0, canvasFreq.width, canvasFreq.height);
+      var barWidth = (canvasFreq.width / data.length) * 2.5;
       var barHeight;
       var x = 0;
+      var maxHeight = canvasFreq.height;
 
       for(var i = 0; i < data.length; i++) {
-        barHeight = data[i];
-        canvasFreq.getContext('2d').fillStyle = 'rgb(' + (barHeight+100) + ',50,50)';
-        canvasFreq.getContext('2d').fillRect(x,canvasFreq.height-barHeight/2,barWidth,barHeight/2);
+        barHeight = (data[i] / 255) * maxHeight;
+        
+        // Create gradient from indigo to pink matching the theme
+        var gradient = ctx.createLinearGradient(0, maxHeight - barHeight, 0, maxHeight);
+        gradient.addColorStop(0, '#818cf8');
+        gradient.addColorStop(0.5, '#a78bfa');
+        gradient.addColorStop(1, '#ec4899');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, maxHeight - barHeight, barWidth, barHeight);
         x += barWidth + 1;
       }
 
