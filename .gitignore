@@ -350,5 +350,5 @@ MigrationBackup/
 .ionide/
 
 # Test files
-waveform-test.png
+waveform-test*.png
 test-waveform.js

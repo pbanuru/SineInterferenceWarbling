@@ -86,6 +86,7 @@
     oscillator2.start();
 
     var analyser = audioContext.createAnalyser();
+    analyser.fftSize = 8192; // Higher FFT size for better frequency resolution (4096 bins)
     gainNode.connect(analyser);
 
     function drawTimeDomain() {
@@ -136,23 +137,50 @@
 
       var ctx = canvasFreq.getContext('2d');
       ctx.clearRect(0, 0, canvasFreq.width, canvasFreq.height);
-      var barWidth = (canvasFreq.width / data.length) * 2.5;
-      var barHeight;
-      var x = 0;
-      var maxHeight = canvasFreq.height;
 
-      for(var i = 0; i < data.length; i++) {
-        barHeight = (data[i] / 255) * maxHeight;
-        
+      // Get current frequencies
+      var freq1 = parseFloat(frequency1Slider.value);
+      var freq2 = parseFloat(frequency2Slider.value);
+
+      // Calculate frequency range to display
+      var minFreq = Math.min(freq1, freq2);
+      var maxFreq = Math.max(freq1, freq2);
+
+      // Add padding (50% on each side) for better visualization
+      var freqRange = maxFreq - minFreq;
+      var padding = Math.max(freqRange * 0.5, 100); // At least 100 Hz padding
+      var displayMinFreq = Math.max(0, minFreq - padding);
+      var displayMaxFreq = maxFreq + padding;
+
+      // Calculate which FFT bins to display
+      var nyquist = audioContext.sampleRate / 2;
+      var binCount = analyser.frequencyBinCount;
+
+      // Convert frequencies to bin indices
+      var startBin = Math.floor((displayMinFreq / nyquist) * binCount);
+      var endBin = Math.ceil((displayMaxFreq / nyquist) * binCount);
+
+      // Ensure we stay within bounds
+      startBin = Math.max(0, startBin);
+      endBin = Math.min(binCount - 1, endBin);
+
+      var binsToDisplay = endBin - startBin + 1;
+      var barWidth = canvasFreq.width / binsToDisplay;
+      var maxHeight = canvasFreq.height;
+      var x = 0;
+
+      for(var i = startBin; i <= endBin; i++) {
+        var barHeight = (data[i] / 255) * maxHeight;
+
         // Create gradient from indigo to pink matching the theme
         var gradient = ctx.createLinearGradient(0, maxHeight - barHeight, 0, maxHeight);
         gradient.addColorStop(0, '#818cf8');
         gradient.addColorStop(0.5, '#a78bfa');
         gradient.addColorStop(1, '#ec4899');
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(x, maxHeight - barHeight, barWidth, barHeight);
-        x += barWidth + 1;
+        x += barWidth;
       }
 
       requestAnimationFrame(drawFrequencyDomain);
