@@ -64,13 +64,21 @@
     var oscillator1 = audioContext.createOscillator();
     var oscillator2 = audioContext.createOscillator();
 
+    // Create individual gain nodes to prevent clipping when waves combine
+    var gain1 = audioContext.createGain();
+    var gain2 = audioContext.createGain();
+    gain1.gain.value = 0.4;
+    gain2.gain.value = 0.4;
+
     var gainNode = audioContext.createGain();
 
     oscillator1.frequency.value = frequency1Slider.value;
     oscillator2.frequency.value = frequency2Slider.value;
 
-    oscillator1.connect(gainNode);
-    oscillator2.connect(gainNode);
+    oscillator1.connect(gain1);
+    oscillator2.connect(gain2);
+    gain1.connect(gainNode);
+    gain2.connect(gainNode);
 
     gainNode.connect(audioContext.destination);
 
@@ -80,22 +88,6 @@
     var analyser = audioContext.createAnalyser();
     gainNode.connect(analyser);
 
-    // Track frequencies and cached min/max for stable scaling
-    var currentFreq1 = parseFloat(frequency1Slider.value);
-    var currentFreq2 = parseFloat(frequency2Slider.value);
-    var cachedMin = 0;
-    var cachedMax = 255;
-    var scaleUpdateFrames = 0;
-    var maxScaleUpdateFrames = 600; // Sample for 10 seconds at 60fps to capture slow beat frequencies
-
-    function updateWaveformScale(data) {
-      // Accumulate min/max over multiple frames
-      for (var i = 0; i < data.length; i++) {
-        if (data[i] < cachedMin) cachedMin = data[i];
-        if (data[i] > cachedMax) cachedMax = data[i];
-      }
-    }
-
     function drawTimeDomain() {
       var data = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteTimeDomainData(data);
@@ -103,72 +95,14 @@
       var ctx = canvasTime.getContext('2d');
       ctx.clearRect(0, 0, canvasTime.width, canvasTime.height);
       ctx.beginPath();
-      
+
       var width = canvasTime.width;
       var height = canvasTime.height;
       var sliceWidth = width * 1.0 / data.length;
       var x = 0;
 
-      // Check if frequencies changed
-      var newFreq1 = parseFloat(frequency1Slider.value);
-      var newFreq2 = parseFloat(frequency2Slider.value);
-      
-      if (newFreq1 !== currentFreq1 || newFreq2 !== currentFreq2) {
-        currentFreq1 = newFreq1;
-        currentFreq2 = newFreq2;
-        scaleUpdateFrames = 0;
-        // Reset cached values to force recalculation
-        cachedMin = 255;
-        cachedMax = 0;
-      }
-
-      // Update scale only when frequencies change or during initial sampling period
-      if (scaleUpdateFrames < maxScaleUpdateFrames) {
-        updateWaveformScale(data);
-        scaleUpdateFrames++;
-      }
-      
-      // Use cached values if valid, otherwise use current frame's data
-      var useCached = cachedMax > cachedMin && scaleUpdateFrames >= maxScaleUpdateFrames;
-      var min = useCached ? cachedMin : 255;
-      var max = useCached ? cachedMax : 0;
-      
-      // If not using cached, get current frame's range
-      if (!useCached) {
-        for (var i = 0; i < data.length; i++) {
-          if (data[i] < min) min = data[i];
-          if (data[i] > max) max = data[i];
-        }
-      }
-      
-      // Check current frame for values outside cached range and expand if needed
-      if (useCached) {
-        var currentMin = 255;
-        var currentMax = 0;
-        for (var i = 0; i < data.length; i++) {
-          if (data[i] < currentMin) currentMin = data[i];
-          if (data[i] > currentMax) currentMax = data[i];
-        }
-        // Expand cached range if current frame exceeds it, and update cache
-        if (currentMin < cachedMin) {
-          cachedMin = currentMin;
-          min = currentMin;
-        }
-        if (currentMax > cachedMax) {
-          cachedMax = currentMax;
-          max = currentMax;
-        }
-      }
-      
-      // Add very generous padding to the range to prevent clipping (50% on each side)
-      // This ensures we have plenty of headroom for peaks that might exceed sampled values
-      var rangePadding = Math.max((max - min) * 0.5, 20); // At least 20 units of padding
-      var adjustedMin = Math.max(0, min - rangePadding);
-      var adjustedMax = Math.min(255, max + rangePadding);
-      var range = adjustedMax - adjustedMin;
-      
-      // Canvas padding (8% on top and bottom for extra headroom)
-      var padding = height * 0.08;
+      // Canvas padding (10% on top and bottom for headroom)
+      var padding = height * 0.1;
       var availableHeight = height - (padding * 2);
 
       ctx.strokeStyle = '#818cf8';
@@ -179,9 +113,9 @@
       ctx.shadowColor = 'rgba(129, 140, 248, 0.6)';
 
       for (var i = 1; i < data.length; i++) {
-        // Normalize to 0-1 range based on adjusted min/max, then scale to fit canvas
-        var normalized = range > 0 ? (data[i] - adjustedMin) / range : 0.5;
-        var y = padding + (normalized * availableHeight);
+        // Map 0-255 range to canvas height with padding
+        // 0 -> bottom, 255 -> top
+        var y = padding + availableHeight - ((data[i] / 255) * availableHeight);
 
         if(i === 1) {
           ctx.moveTo(x, y);

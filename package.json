@@ -1,0 +1,24 @@
+{
+  "name": "sineinterferencewarbling",
+  "version": "1.0.0",
+  "description": "This website demonstrates how audio waves of different frequencies blend together and cancel each other out, and how the closer two frequencies are, the slower the warbling will be.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pbanuru/SineInterferenceWarbling.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pbanuru/SineInterferenceWarbling/issues"
+  },
+  "homepage": "https://github.com/pbanuru/SineInterferenceWarbling#readme",
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}
